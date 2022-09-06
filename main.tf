@@ -13,6 +13,7 @@ provider "aws" {
 resource "aws_instance" "my_new_ec2" {
   ami           = "ami-00785f4835c6acf64"
   instance_type = "t2.nano"
+  count = 2
   tags = {
     env = prod
   }
