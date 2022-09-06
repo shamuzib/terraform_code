@@ -13,7 +13,7 @@ provider "aws" {
 resource "aws_instance" "my_new_ec2" {
   ami           = "ami-00785f4835c6acf64"
   instance_type = "t2.nano"
-  count = 2
+  count = 1
   tags = {
     env = prod
   }
@@ -25,6 +25,11 @@ resource "aws_s3_bucket" "my_Bucket" {
 
 resource "aws_eip" "my-public-ip" {
  vpc = true 
+}
+
+resource "aws_eip_association" "my_ec2_eip" {
+  instance_id =  aws_instance.my_new_ec2.id
+  allocation_id =  aws_eip.my-public-ip.id
 }
 
 output "s3bucket" {
