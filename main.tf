@@ -39,3 +39,25 @@ output "s3bucket" {
 output "pubip" {
  value = aws_eip.my-public-ip
 }
+
+# resource "aws_security_group" "my_sg" {
+#   vpc_id = "vpc-007cde82c47f92312"
+#   name = "my_sg_prod"
+#   ingress {
+#     from_port = "443"
+#     to_port = "443"
+#     protocol = "tcp"
+#     cidr_block = ["${aws_eip.my-public-ip.id}/32"]
+#   }
+# }
+
+resource "aws_security_group" "my_sg" {
+  name = "my_sg"
+  vpc_id = "vpc-007cde82c47f92312"
+  ingress {
+    from_port = "443"
+    to_port = "443"
+    protocol = "tcp"
+    cidr_block = [var.vpn_ip]
+  }
+}
