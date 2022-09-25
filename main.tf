@@ -1,13 +1,17 @@
+#############################
+##########Project-D##########
+#############################
 terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
+      version = "4.32.0"
     }
   }
 }
 
 provider "aws" {
-  region = "eu-west-2"
+  region = var.aws_region
 }
 
 resource "aws_instance" "my_new_ec2" {
