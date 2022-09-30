@@ -1,7 +1,5 @@
 resource "aws_vpc" "prod-vpc" {
-  cidr_block = var.vpc_cidr
+  cidr_block       = var.vpc_cidr
   instance_tenancy = "default"
-  tags = {
-    env = "production"
-  }
+  tags             = local.common_tags
 }
