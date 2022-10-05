@@ -1,13 +1,13 @@
 resource "aws_route_table" "prod-rt-public" {
   vpc_id = aws_vpc.prod-vpc.id
   route {
-    cidr_block = "0.0.0.0/0"
+    cidr_block = var.routes_public
     gateway_id = aws_internet_gateway.prod-igw.id
   }
   tags = local.common_tags
 }
 
-resource "aws_route_table_association" "public" {
+resource "aws_route_table_association" "prod-public-routes" {
   subnet_id      = element(aws_subnet.prod-subnet-public[*].id, count.index)
   route_table_id = aws_route_table.prod-rt-public.id
   count          = 2
@@ -16,22 +16,16 @@ resource "aws_route_table_association" "public" {
 resource "aws_route_table" "prod-rt-private" {
   vpc_id = aws_vpc.prod-vpc.id
   route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.prod-natgw.id
+    cidr_block = var.routes_public
+    gateway_id = element(aws_nat_gateway.prod-natgw[*].id, 0)
   }
   tags = local.common_tags
 }
 
-resource "aws_route_table_association" "private-a" {
-  subnet_id      = element(aws_subnet.prod-subnet-private-a[*].id, count.index)
+resource "aws_route_table_association" "prod-private-routes" {
+  subnet_id      = element(aws_subnet.prod-subnet-private[*].id, count.index)
   route_table_id = aws_route_table.prod-rt-private.id
-  count          = 2
-}
-
-resource "aws_route_table_association" "private-b" {
-  subnet_id      = element(aws_subnet.prod-subnet-private-b[*].id, count.index)
-  route_table_id = aws_route_table.prod-rt-private.id
-  count          = 2
+  count          = 4
 }
 
 # resource "aws_route_table_association" "public" {

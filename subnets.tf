@@ -1,25 +1,17 @@
 resource "aws_subnet" "prod-subnet-public" {
   vpc_id                  = aws_vpc.prod-vpc.id
   cidr_block              = var.subnet_cidr_public[count.index]
-  availability_zone       = var.availability_zone[count.index]
+  availability_zone       = data.aws_availability_zones.prod-az.names[count.index]
   map_public_ip_on_launch = true
-  count                   = 2
+  count                   = length(var.subnet_cidr_public)
   tags                    = local.common_tags
 }
 
-
-resource "aws_subnet" "prod-subnet-private-a" {
-  vpc_id            = aws_vpc.prod-vpc.id
-  cidr_block        = var.subnet_cidr_private-a[count.index]
-  availability_zone = var.availability_zone-a
-  count             = 2
-  tags              = local.common_tags
-}
-
-resource "aws_subnet" "prod-subnet-private-b" {
-  vpc_id            = aws_vpc.prod-vpc.id
-  cidr_block        = var.subnet_cidr_private-b[count.index]
-  availability_zone = var.availability_zone-b
-  count             = 2
+resource "aws_subnet" "prod-subnet-private" {
+  vpc_id     = aws_vpc.prod-vpc.id
+  cidr_block = var.subnet_cidr_private[count.index]
+  # availability_zone = var.availability-zone-subnet-private
+  availability_zone = var.az_public != "" ? var.az_public[count.index % length(var.az_public)] : var.az-private[count.index % length(var.az-private)]
+  count             = length(var.subnet_cidr_private)
   tags              = local.common_tags
 }
