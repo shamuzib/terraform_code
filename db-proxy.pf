@@ -1,0 +1,35 @@
+import boto3
+
+def update_rds_proxy(secret_arn, dbproxy_name):
+    rds = boto3.client('rds')
+
+    # Get the RDS Proxy ARN
+    response = rds.describe_db_proxies(Filters=[{'Name': 'db-proxy-name', 'Values': [dbproxy_name]}])
+    proxy = response['DBProxies'][0]
+    proxy_arn = proxy['DBProxyArn']
+
+    # Get the current target group for the RDS Proxy
+    target_groups = rds.describe_db_proxy_target_groups(DBProxyName=dbproxy_name)['TargetGroups']
+    target_group = target_groups[0]
+
+    # Get the current secret attached to the target group
+    secrets = rds.describe_db_proxy_target_group_members(DBProxyName=dbproxy_name, TargetGroupName=target_group['TargetGroupName'])['Members']
+    current_secret_arn = secrets[0]['DBInstanceIdentifier']
+
+    # Check if the current secret is different from the new secret
+    if current_secret_arn == secret_arn:
+        print(f"The RDS Proxy is already using the secret: {secret_arn}")
+    else:
+        # Update the target group with new secret
+        rds.modify_db_proxy_target_group(DBProxyName=dbproxy_name,
+                                         TargetGroupName=target_group['TargetGroupName'],
+                                         ConnectionPoolConfiguration={
+                                             'ConnectionBorrowTimeout': target_group['ConnectionPoolConfig']['ConnectionBorrowTimeout'],
+                                             'InitQuery': target_group['ConnectionPoolConfig']['InitQuery'],
+                                             'MaxConnectionsPercent': target_group['ConnectionPoolConfig']['MaxConnectionsPercent'],
+                                             'MaxIdleConnectionsPercent': target_group['ConnectionPoolConfig']['MaxIdleConnectionsPercent'],
+                                             'SessionPinningFilters': target_group['ConnectionPoolConfig']['SessionPinningFilters'],
+                                             'SessionPinningTemplate': target_group['ConnectionPoolConfig']['SessionPinningTemplate']
+                                         },
+                                         DBInstanceIdentifiers=[secret_arn])
+        print(f"The RDS Proxy was updated to use the secret: {secret_arn}")
