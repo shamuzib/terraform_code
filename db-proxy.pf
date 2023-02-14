@@ -33,3 +33,19 @@ def update_rds_proxy(secret_arn, dbproxy_name):
                                          },
                                          DBInstanceIdentifiers=[secret_arn])
         print(f"The RDS Proxy was updated to use the secret: {secret_arn}")
+        
+        
+ import boto3
+
+# Replace these values with the ARN of your secret and the identifier of your RDS Proxy
+secret_arn = "arn:aws:secretsmanager:us-west-2:123456789012:secret:mydb-creds-abc123"
+proxy_id = "my-proxy"
+
+# Create an RDS client and get the current proxy details
+rds = boto3.client("rds")
+proxy = rds.describe_db_proxies(DBProxyName=proxy_id)["DBProxies"][0]
+
+# Update the proxy with the new secret
+proxy["Auth"] = [{"AuthScheme": "SECRETS", "SecretArn": secret_arn}]
+rds.modify_db_proxy(DBProxyName=proxy_id, Auth=proxy["Auth"])
+
