@@ -49,3 +49,20 @@ proxy = rds.describe_db_proxies(DBProxyName=proxy_id)["DBProxies"][0]
 proxy["Auth"] = [{"AuthScheme": "SECRETS", "SecretArn": secret_arn}]
 rds.modify_db_proxy(DBProxyName=proxy_id, Auth=proxy["Auth"])
 
+
+import boto3
+
+def update_rds_proxy_with_secret(secret_arn, proxy_id, region):
+    # Create an RDS client and get the current proxy details
+    rds = boto3.client("rds", region_name=region)
+    proxy = rds.describe_db_proxies(DBProxyName=proxy_id)["DBProxies"][0]
+
+    # Check if the secret is already added to the proxy
+    auth = proxy.get("Auth")
+    if auth is not None and any(a.get("SecretArn") == secret_arn for a in auth):
+        print("Secret is already added to the RDS Proxy, ignoring update")
+        return
+
+    # Update the proxy with the new secret
+    proxy["Auth"] = [{"AuthScheme": "SECRETS", "SecretArn": secret_arn}]
+    rds.modify_db_proxy(DBProxyName=proxy_id, Auth=proxy["Auth"])
