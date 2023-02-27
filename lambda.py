@@ -1,20 +1,18 @@
-import hvac
 import os
+import hvac
 
-def lambda_handler(event, context):
-    # Create a Hashicorp Vault client object
-    client = hvac.Client(url=os.environ['VAULT_URL'])
-
-    # Check if the Vault server is sealed
-    if client.is_sealed():
-        # Vault is sealed, return an error message
-        return {
-            'statusCode': 500,
-            'body': 'Vault is sealed, please unseal the vault first'
-        }
+def check_vault_sealed():
+    # Load Vault server URL from environment variable
+    vault_url = os.environ.get('VAULT_URL')
+    if not vault_url:
+        raise ValueError('Vault URL not set in environment variable "VAULT_URL"')
+    
+    # Create a new Vault client
+    client = hvac.Client(url=vault_url)
+    
+    # Check if Vault server is sealed
+    status = client.sys.is_sealed()
+    if status:
+        return "Vault is sealed, please unseal the Vault"
     else:
-        # Vault is not sealed, return a success message
-        return {
-            'statusCode': 200,
-            'body': 'Vault is not sealed, ready to use'
-        }
+        return "Vault is unsealed"
