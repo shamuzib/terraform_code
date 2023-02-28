@@ -136,4 +136,54 @@ def check_vault(vault_url, vault_token, secret_path):
         # Vault is sealed
         raise RuntimeError('Error checking Vault status')
 
+===============================================================================================================
+
+
+import subprocess
+
+def get_secrets(vault_url, vault_token, secrets_path):
+    # Check if Vault is unsealed
+    try:
+        subprocess.check_output(['vault', 'status'],
+                                env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        print(f"Vault is sealed. Please unseal the vault: {e.output}")
+        return None
+    
+    # Check if the specified secrets path exists and contains secrets (not directories)
+    try:
+        output = subprocess.check_output(['vault', 'kv', 'list', '-format', 'json', secrets_path],
+                                          env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                          stderr=subprocess.STDOUT)
+        secrets_list = output.decode('utf-8').strip().split('\n')
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving secrets list: {e.output}")
+        return None
+    
+    # Check if the secrets path contains any directories (and exclude them from processing)
+    secrets_list = [secret for secret in secrets_list if not secret.endswith('/')]
+    
+    # Retrieve the key-value pairs for each secret in the specified path
+    secrets = []
+    for secret in secrets_list:
+        secret_path = f"{secrets_path}/{secret}"
+        try:
+            output = subprocess.check_output(['vault', 'kv', 'get', '-format', 'json', secret_path],
+                                              env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                              stderr=subprocess.STDOUT)
+            secret_data = output.decode('utf-8').strip()
+        except subprocess.CalledProcessError as e:
+            print(f"Error retrieving secret data for {secret_path}: {e.output}")
+            continue
+        
+        # Extract the key-value pairs from the JSON output
+        try:
+            secret_dict = {entry['key']: entry['value'] for entry in json.loads(secret_data)['data'].items()}
+            secrets.append(secret_dict)
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Error parsing secret data for {secret_path}: {e}")
+            continue
+    
+    return secrets
 
