@@ -98,3 +98,47 @@ def check_vault(vault_url, vault_token, secret_path):
     else:
         # Vault is sealed
         raise RuntimeError('Error checking Vault status')
+        
+================================================================================================    
+    
+import subprocess
+import json
+
+def check_vault(vault_url, vault_token, secret_path):
+    # Check Vault status
+    status = subprocess.run(['vault', 'status'], 
+                            env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if status.returncode == 0:
+        # Vault is unsealed, list secrets in path
+        path_list = subprocess.run(['vault', 'kv', 'list', secret_path], 
+                                   env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        if path_list.returncode == 0:
+            # Path exists, read and display output
+            output = path_list.stdout.decode('utf-8').strip()
+            secrets = output.split('\n')
+            directories = [s for s in secrets if s.endswith('/')]
+            secrets = [s for s in secrets if not s.endswith('/')]
+            
+            # Get data for each secret
+            secret_data = []
+            for secret in secrets:
+                secret_get = subprocess.run(['vault', 'kv', 'get', '-format=json', f"{secret_path}{secret}"], 
+                                            env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                if secret_get.returncode == 0:
+                    secret_json = json.loads(secret_get.stdout.decode('utf-8').strip())
+                    secret_data.append((secret, secret_json['data']))
+            
+            return directories, secret_data
+        else:
+            # Path does not exist
+            return f"Path {secret_path} does not exist"
+    else:
+        # Vault is sealed
+        raise RuntimeError('Error checking Vault status')
+
