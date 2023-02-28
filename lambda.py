@@ -102,7 +102,6 @@ def check_vault(vault_url, vault_token, secret_path):
 ================================================================================================    
     
 import subprocess
-import json
 
 def check_vault(vault_url, vault_token, secret_path):
     # Check Vault status
@@ -120,25 +119,21 @@ def check_vault(vault_url, vault_token, secret_path):
             # Path exists, read and display output
             output = path_list.stdout.decode('utf-8').strip()
             secrets = output.split('\n')
-            directories = [s for s in secrets if s.endswith('/')]
-            secrets = [s for s in secrets if not s.endswith('/')]
-            
-            # Get data for each secret
             secret_data = []
             for secret in secrets:
-                secret_get = subprocess.run(['vault', 'kv', 'get', '-format=json', f"{secret_path}{secret}"], 
-                                            env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
-                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                
-                if secret_get.returncode == 0:
-                    secret_json = json.loads(secret_get.stdout.decode('utf-8').strip())
-                    secret_data.append((secret, secret_json['data']))
+                if secret:
+                    secret_get = subprocess.run(['vault', 'kv', 'get', secret_path + secret], 
+                                                env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    if secret_get.returncode == 0:
+                        secret_data.append(secret_get.stdout.decode('utf-8').strip())
             
-            return directories, secret_data
+            return secret_data
         else:
             # Path does not exist
             return f"Path {secret_path} does not exist"
     else:
         # Vault is sealed
         raise RuntimeError('Error checking Vault status')
+
 
