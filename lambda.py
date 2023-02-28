@@ -70,3 +70,31 @@ def check_vault(vault_url, vault_token, secret_path):
         # Vault is sealed
         raise RuntimeError('Error checking Vault status')
 
+=============================================================================
+
+import subprocess
+
+def check_vault(vault_url, vault_token, secret_path):
+    # Check Vault status
+    status = subprocess.run(['vault', 'status'], 
+                            env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    
+    if status.returncode == 0:
+        # Vault is unsealed, check if secret path exists
+        path_exists = subprocess.run(['vault', 'kv', 'get', '-format=json', '-field=data', secret_path], 
+                                     env={'VAULT_ADDR': vault_url, 'VAULT_TOKEN': vault_token},
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        if path_exists.returncode == 0:
+            # Path exists, read and display output
+            secret_data = path_exists.stdout.decode('utf-8').strip()
+            secret_dict = json.loads(secret_data)
+            secret_key, secret_value = list(secret_dict.items())[0]
+            return f"Secret key for path {secret_path}: {secret_key}, secret value: {secret_value}"
+        else:
+            # Path does not exist
+            return f"Path {secret_path} does not exist"
+    else:
+        # Vault is sealed
+        raise RuntimeError('Error checking Vault status')
