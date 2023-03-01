@@ -1,11 +1,10 @@
-name : First Workflow
-on: workflow_dispatch
+name: My First Workflow
+on: workflow_dispatch #It will wait for user to start workflow manually
 jobs:
   first_job:
     runs-on: ubuntu-latest
     steps:
-    - name: Print Greeting
+    - name: initialize the backend
       run: echo "Hello World"
-    - name: Print Goodbye
-      run: echo "Bye! Bye"
-      
+    - name: create the plan
+      run: echo "Command is successful"
