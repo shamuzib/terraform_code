@@ -1,26 +1,76 @@
-import json
-import requests
+import hvac
+import boto3
+from datetime import datetime, timedelta
 
-def lambda_handler(event, context):
-    vault_url = event.get("vault_url")
-    if not vault_url:
-        return {"statusCode": 400, "body": "Missing 'vault_url' parameter"}
+VAULT_ADDR = "https://example.com:8200"
+VAULT_TOKEN = "s.abc123def456ghi789"
+VAULT_PATH = "secret/data/my/path"
+PROJECT_NAME = "my_project"
+ENVIRONMENT = "dev"
 
-    try:
-        sealed = is_vault_sealed(vault_url)
-        return {"statusCode": 200, "body": json.dumps({"sealed": sealed})}
-    except Exception as e:
-        return {"statusCode": 500, "body": str(e)}
 
-def is_vault_sealed(vault_url):
-    """
-    Check if a Vault server at the given URL is sealed or not.
-    Returns True if the server is sealed, False otherwise.
-    """
-    api_url = f"{vault_url}/v1/sys/seal-status"
-    response = requests.get(api_url)
-    if response.status_code == 200:
-        data = response.json()
-        return data["sealed"]
+def main():
+    client = hvac.Client(url=VAULT_ADDR, token=VAULT_TOKEN)
+
+    if client.sys.is_sealed():
+        print("Vault is sealed")
+        return
     else:
-        raise Exception(f"Error checking Vault seal status: {response.status_code} - {response.text}")
+        print("Vault is unsealed")
+
+    secrets_data = get_secrets_data(client, VAULT_PATH)
+
+    new_secrets_data = modify_secret_keys(PROJECT_NAME, ENVIRONMENT, secrets_data)
+
+    write_to_secret_manager(new_secrets_data)
+
+
+def get_secrets_data(client, path):
+    secrets = client.secrets.kv.v2.list_secrets(path=path)
+    directories = []
+    secrets_data = {}
+    for secret in secrets["data"]["keys"]:
+        if secret.endswith("/"):
+            directories.append(secret[:-1])
+        else:
+            secret_data = client.secrets.kv.v2.read_secret_version(path=path+"/"+secret)["data"]["data"]
+            secret_time = datetime.strptime(secret_data["time"], '%Y-%m-%dT%H:%M:%S.%fZ')
+            if datetime.utcnow() - secret_time < timedelta(hours=1):
+                secrets_data[secret] = secret_data
+
+    for directory in directories:
+        sub_path = path+"/"+directory
+        sub_secrets = client.secrets.kv.v2.list_secrets(path=sub_path)
+        for secret in sub_secrets["data"]["keys"]:
+            secret_path = sub_path+"/"+secret
+            secret_data = client.secrets.kv.v2.read_secret_version(path=secret_path)["data"]["data"]
+            secret_time = datetime.strptime(secret_data["time"], '%Y-%m-%dT%H:%M:%S.%fZ')
+            if datetime.utcnow() - secret_time < timedelta(hours=1):
+                secrets_data[directory+"/"+secret] = secret_data
+
+    return secrets_data
+
+
+def modify_secret_keys(project_name, environment, secrets_data):
+    new_secrets_data = {}
+    for secret_key, secret_data in secrets_data.items():
+        new_secret_key = f"{project_name}-{environment}-{secret_key}-secret"
+        new_secrets_data[new_secret_key] = secret_data
+
+    return new_secrets_data
+
+
+def write_to_secret_manager(secrets_data):
+    client_sm = boto3.client('secretsmanager')
+    for secret_key, secret_data in secrets_data.items():
+        try:
+            client_sm.describe_secret(SecretId=secret_key)
+        except:
+            client_sm.create_secret(Name=secret_key, SecretString=str(secret_data))
+            print(f"New secret {secret_key} created in AWS Secret Manager")
+        else:
+            print(f"Secret {secret_key} already exists in AWS Secret Manager")
+
+
+if __name__ == "__main__":
+    main()
