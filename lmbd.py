@@ -74,3 +74,22 @@ def write_to_secret_manager(secrets_data):
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+
+    
+    
+import hvac
+
+def get_vault_secret(vault_url, vault_token, secret_path):
+    # Create a client instance and authenticate with Vault
+    client = hvac.Client(url=vault_url, token=vault_token)
+
+    # Retrieve the secret from Vault
+    try:
+        secret = client.secrets.kv.v2.read_secret_version(path=secret_path)
+        return secret["data"]["data"]
+    except Exception as e:
+        raise ValueError(f"Unable to retrieve secret from Vault: {str(e)}")
+
