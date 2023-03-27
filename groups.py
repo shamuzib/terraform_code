@@ -1,26 +1,33 @@
-import requests
+import boto3
 
-# Set up API endpoint URL and API key
-url = 'https://<PMP_Endpoint_URL>/restapi'
-api_key = '<your_API_key>'
+def update_rds_proxy_with_secrets(proxy_name, secrets_arn_file):
+    # Create an RDS client and retrieve the current proxy details
+    rds_client = boto3.client('rds')
+    describe_db_proxies_response = rds_client.describe_db_proxies(DBProxyName=proxy_name)
+    db_proxy = describe_db_proxies_response['DBProxies'][0]
 
-# Set up HTTP headers for API requests
-headers = {
-    'Authorization': 'APIKEY ' + api_key,
-    'Content-Type': 'application/json'
-}
+    # Retrieve the current list of secrets for the proxy
+    current_secrets = db_proxy['Auth'][0]['SecretArn'].split(',')
 
-# Send API request to retrieve all resource groups
-endpoint = url + '/resgrps'
-response = requests.get(endpoint, headers=headers)
+    # Load the secrets ARNs from a file
+    with open(secrets_arn_file) as f:
+        secrets_arns = f.readlines()
 
-# Process API response
-if response.status_code == 200:
-    # Successful API request
-    data = response.json()
-    # Print the list of resource groups
-    for resgrp in data['resgrp']:
-        print(resgrp['resgrp_name'])
-else:
-    # Failed API request
-    print('Error:', response.status_code, response.text)
+    # Extract the secret ARNs from the file and remove any leading/trailing whitespace
+    new_secrets = [arn.strip() for arn in secrets_arns]
+
+    # Check if the secrets list has changed
+    if set(current_secrets) == set(new_secrets):
+        print(f"No changes detected for RDS Proxy '{proxy_name}'")
+        return
+
+    # Append the new secrets to the existing list
+    updated_secrets = list(set(current_secrets + new_secrets))
+
+    # Update the RDS Proxy with the updated list of secrets
+    modify_db_proxy_response = rds_client.modify_db_proxy(
+        DBProxyName=proxy_name,
+        Auth=[{'SecretArn': arn} for arn in updated_secrets]
+    )
+
+    print(f"Successfully updated RDS Proxy '{proxy_name}' with new secrets list")
