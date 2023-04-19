@@ -62,3 +62,63 @@ resource "aws_cloudwatch_metric_alarm" "rds_metrics" {
   alarm_actions   = []
   insufficient_data_actions = []
 }
+
+
+
+# Define variables
+variable "instance_id" {
+  description = "EC2 instance ID"
+}
+
+variable "metric_thresholds" {
+  description = "Metric thresholds"
+  type = map
+  default = {
+    "StatusCheckFailed" = {
+      "warning" = 1
+      "critical" = 2
+    }
+    "MemoryUtilization" = {
+      "warning" = 75
+      "critical" = 90
+    }
+    "CPUUtilization" = {
+      "warning" = 75
+      "critical" = 90
+    }
+  }
+}
+
+# Create CloudWatch alarms for EC2 metrics
+resource "aws_cloudwatch_metric_alarm" "ec2_metrics" {
+  for_each = var.metric_thresholds
+
+  alarm_name          = "${each.key} alarm for instance ${var.instance_id}"
+  alarm_description   = "Alarm for EC2 metric ${each.key} for instance ${var.instance_id}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  metric_name         = each.key
+  namespace           = "AWS/EC2"
+  period              = "300"
+  statistic           = "Average"
+
+  dimensions = {
+    InstanceId = var.instance_id
+  }
+
+  threshold_metric_id = "1"
+
+  # Set the appropriate unit for each metric
+  threshold_unit = each.key == "StatusCheckFailed" ? "Count" : "Percent"
+
+  # Warning threshold
+  threshold_warning = var.metric_thresholds[each.key]["warning"]
+
+  # Critical threshold
+  threshold_critical = var.metric_thresholds[each.key]["critical"]
+
+  actions_enabled = false
+  ok_actions      = []
+  alarm_actions   = []
+  insufficient_data_actions = []
+}
