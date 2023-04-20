@@ -122,3 +122,64 @@ resource "aws_cloudwatch_metric_alarm" "ec2_metrics" {
   alarm_actions   = []
   insufficient_data_actions = []
 }
+
+
+# Define variables
+variable "vpc_id" {
+  description = "VPC ID"
+}
+
+variable "metric_thresholds" {
+  description = "Metric thresholds"
+  type = map
+  default = {
+    "UnHealthyHostCount" = {
+      "warning" = 1
+      "critical" = 2
+    }
+    "StatusCheckFailed" = {
+      "warning" = 1
+      "critical" = 2
+    }
+    "NetworkOut" = {
+      "warning" = 500000000
+      "critical" = 1000000000
+    }
+    "NetworkIn" = {
+      "warning" = 500000000
+      "critical" = 1000000000
+    }
+  }
+}
+
+# Create CloudWatch alarms for VPC metrics
+resource "aws_cloudwatch_metric_alarm" "vpc_metrics" {
+  for_each = var.metric_thresholds
+
+  alarm_name          = "${each.key} alarm for VPC ${var.vpc_id}"
+  alarm_description   = "Alarm for VPC metric ${each.key} for VPC ${var.vpc_id}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  metric_name         = each.key
+  namespace           = "AWS/EC2"
+  period              = "300"
+  statistic           = "Average"
+
+  dimensions = {
+    VpcId = var.vpc_id
+  }
+
+  threshold_metric_id = "1"
+  threshold_unit      = "Bytes"
+
+  # Warning threshold
+  threshold_warning = var.metric_thresholds[each.key]["warning"]
+
+  # Critical threshold
+  threshold_critical = var.metric_thresholds[each.key]["critical"]
+
+  actions_enabled = false
+  ok_actions      = []
+  alarm_actions   = []
+  insufficient_data_actions = []
+}
