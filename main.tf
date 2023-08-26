@@ -10,11 +10,3 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
-
-terraform {
-  backend "s3" {
-    bucket = "prod-s3-tf-backend"
-    key    = "terraform.tfstate"
-    region = "eu-west-2"
-  }
-}

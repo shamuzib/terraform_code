@@ -21,12 +21,16 @@ resource "aws_security_group" "prod_alb_pub_sg" {
     protocol    = "TCP"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  # Outbound Rules
+  # Internet access to anywhere
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   tags = local.common_tags
 }
-
-#########################################
-########Write Egress Rules for this######
-#########################################
 
 #Security Group for private Load Balancer
 resource "aws_security_group" "prod_alb_private_sg" {
@@ -50,6 +54,12 @@ resource "aws_security_group" "prod_alb_private_sg" {
     to_port         = 22
     protocol        = "TCP"
     security_groups = [aws_security_group.prod_alb_pub_sg.id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   tags = local.common_tags
 }
