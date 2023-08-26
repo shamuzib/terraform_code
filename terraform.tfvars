@@ -1,6 +1,3 @@
-#############################
-##########Project-D##########
-#############################
 #Region and availability_zone
 aws_region = "eu-west-2"
 az_public  = ["eu-west-2a", "eu-west-2b"]

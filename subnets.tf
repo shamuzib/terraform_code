@@ -10,7 +10,6 @@ resource "aws_subnet" "prod-subnet-public" {
 resource "aws_subnet" "prod-subnet-private" {
   vpc_id     = aws_vpc.prod-vpc.id
   cidr_block = var.subnet_cidr_private[count.index]
-  # availability_zone = var.availability-zone-subnet-private
   availability_zone = var.az_public != "" ? var.az_public[count.index % length(var.az_public)] : var.az-private[count.index % length(var.az-private)]
   count             = length(var.subnet_cidr_private)
   tags              = local.common_tags

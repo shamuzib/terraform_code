@@ -1,5 +1,5 @@
 locals {
   common_tags = {
-    env = "production"
+    env = "dissertation"
   }
 }

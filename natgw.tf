@@ -1,3 +1,4 @@
+#Create NAT Gateway
 resource "aws_nat_gateway" "prod-natgw" {
   subnet_id     = aws_subnet.prod-subnet-public[count.index].id #Can be improvised
   allocation_id = aws_eip.prod-eip.id
@@ -6,6 +7,7 @@ resource "aws_nat_gateway" "prod-natgw" {
   count         = 1
 }
 
+#Create Elastic IP
 resource "aws_eip" "prod-eip" {
   tags = local.common_tags
 }
