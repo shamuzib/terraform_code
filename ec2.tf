@@ -2,7 +2,6 @@
 resource "aws_instance" "prod-ec2-private" {
   ami                         = var.ami_type
   instance_type               = var.ec2_type
-  # availability_zone = data.aws_availability_zones.test-az.names[count.index]
   availability_zone = var.az_public != "" ? var.az_public[count.index % length(var.az_public)] : var.az-private[count.index % length(var.az-private)]
   security_groups   = [aws_security_group.prod_alb_private_sg.id]
   subnet_id         = aws_subnet.prod-subnet-private[count.index].id
