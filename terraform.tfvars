@@ -11,3 +11,5 @@ routes_public = "0.0.0.0/0"
 #Instance Types
 ec2_type = "t2.micro"
 ami_type = "ami-06672d07f62285d1d"
+#Database Admin username
+user_name = "dbadmin"
