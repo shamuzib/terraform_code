@@ -1,0 +1,38 @@
+Introduction:
+When working with GitHub Actions pipelines that connect to JFrog to fetch Docker images via an outbound proxy, you may encounter connectivity issues. This document outlines the steps to troubleshoot and resolve these issues, ensuring seamless pipeline execution.
+
+Issue Description:
+The issue at hand is a connection timeout error when the GitHub Actions pipeline attempts to log in to JFrog via the outbound proxy. This error indicates a connectivity problem that needs to be addressed.
+
+Troubleshooting Steps:
+
+Identify the Problem:
+
+Begin by verifying the exact error message received, which is a "connection timeout" in this case. This indicates that the pipeline is unable to establish a connection with the required server.
+Firewall Configuration:
+
+Check your network's firewall configuration. Ensure that the necessary ports are open to allow outbound traffic. In your case, you mentioned raising a firewall request and opening the required ports. Document the specific ports that were opened for future reference.
+Network Access Control List (NACL) Rules:
+
+If your network employs Network Access Control Lists (NACLs), ensure that the outbound proxy's IP is not being blocked. As you mentioned, an NACL outbound rule blocked the outbound proxy's IP, which was resolved by opening it. Document this change for future maintenance.
+GitHub Actions Secrets:
+
+Review the secrets configured in your GitHub Actions pipeline. Ensure that the proxy-related credentials and settings are correctly set up. Any misconfiguration here can lead to connectivity issues.
+Proxy Configuration:
+
+Verify the proxy configuration within your pipeline. Double-check proxy settings, including proxy server address, port, and authentication credentials. Ensure that these details match your network and proxy server configuration.
+DNS Resolution:
+
+Ensure that DNS resolution is functioning correctly. If the pipeline cannot resolve the hostname of the JFrog server or the outbound proxy, it can lead to connection timeouts. Troubleshoot and document any DNS-related issues.
+Proxy Authentication:
+
+If your proxy requires authentication, confirm that the credentials used in the pipeline are accurate. Authentication failures can also result in connection issues.
+Conclusion:
+Troubleshooting GitHub Actions pipeline connectivity issues with JFrog outbound proxy requires a systematic approach. By verifying firewall settings, NACL rules, GitHub Actions secrets, proxy configurations, DNS resolution, and proxy authentication, you can identify and resolve the root cause of the connection timeout error. Documenting these troubleshooting steps is essential for future reference and maintenance, ensuring that your pipeline continues to operate smoothly.
+
+Note: Make sure to regularly review and update your documentation to account for any changes in your network or pipeline configuration.
+
+
+
+
+
